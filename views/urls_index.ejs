@@ -7,11 +7,17 @@
 <body>
   <ul>
     <% for (let key in urls) { %>
-      <li> <%= key %> = <%= urls[key] %> </li>
+      <li>
+      <%= key %> = <%= urls[key] %>
+      <form method="POST" action="/urls/<%= key %>/delete">
+      <button type="submit">Delete</button></form>
+      <form method="GET" action="/urls/<%= key %>">
+      <button type="submit">Edit</button></form>
+      </li>
     <% } %>
   </ul>
   <p>
-    <a href="hahaimjustadeadlink.com"> Shorten a new URL! </a>
+    <a href="/urls/new"> Shorten a new URL! </a>
   </p>
 </body>
 </html>

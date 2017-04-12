@@ -17,4 +17,4 @@ function generateRandomString() {
   return randomString;
 }
 
-module.exports = generateRandomString();
+module.exports = generateRandomString;

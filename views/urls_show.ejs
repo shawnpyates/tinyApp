@@ -8,7 +8,12 @@
   <h3>
       <% for (let key in urls) { %>
         <% if (key === shortURL) { %>
-          Full URL: <%= urls[key] %>
+          Full URL: <a><%= urls[key] %></a>
+          <form action="/urls/<%= key %>" method="POST" style="margin:150px;">
+          <label for="longURL">Enter a new full URL for the code <%= key %>:</label>
+          <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
+          <input type="submit" value="Submit">
+          </form>
         <% } %>
       <% } %>
   </h3>
