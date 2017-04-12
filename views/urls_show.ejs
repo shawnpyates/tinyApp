@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title> Tiny App</title>
+  <% include partials/_header %>
+</head>
+<body>
+  <h3>
+      <% for (let key in urls) { %>
+        <% if (key === shortURL) { %>
+          Full URL: <%= urls[key] %>
+        <% } %>
+      <% } %>
+  </h3>
+  <p> Short URL: <%= shortURL %> </p>
+</body>
+</html>
