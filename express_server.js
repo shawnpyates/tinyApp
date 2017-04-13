@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 8080;
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 const generateRandomString = require("./helperCode");
 
 // function generateRandomString() {
@@ -24,6 +25,7 @@ const generateRandomString = require("./helperCode");
 // }
 
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
 
 app.set("view engine", "ejs");
 
@@ -32,10 +34,7 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-// allow user to submit new URL to be shortened
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
+
 
 // when user submits url, we use function to generate random 6-character string
 // store the longURL in database with the random string as a key
@@ -43,28 +42,51 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls", (req, res) => {
   let randomString = generateRandomString();
   urlDatabase[randomString] = `http://${req.body.longURL}`;
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   console.log(req.body, urlDatabase);
-  res.redirect(303, `/urls/${randomString}`);
+  res.render("urls_index", templateVars);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
-  let templateVars = { urls: urlDatabase };
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   console.log(req.body, urlDatabase);
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL] = `http://${req.body.longURL}`;
-  let templateVars = { urls: urlDatabase}
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   console.log(req.body, urlDatabase);
   res.render("urls_index", templateVars);
+});
+
+app.post("/login", (req, res) => {
+  res.cookie("username", req.body.username);
+  console.log(res.cookie.username);
+  res.redirect(301, "/urls");
+})
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  console.log("Cookie is all gone!");
+  res.redirect(301, "/urls");
 });
 
 
 // get root directory
 app.get("/", (req, res) => {
-  res.end(`Hello!`);
+  console.log("Cookies: ", req.cookies);
+  res.end(`Please log in to begin!`);
 });
 
 // get info in json
@@ -72,15 +94,31 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// allow user to submit new URL to be shortened
+app.get("/urls/new", (req, res) => {
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
+  res.render("urls_new", templateVars);
+});
+
 // show all urls
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   res.render("urls_index", templateVars);
 });
 
 // get page according to short ID
 app.get("/urls/:id", (req, res) => {
-  let templateVars = { shortURL: req.params.id, urls: urlDatabase };
+  let templateVars = {
+    shortURL: req.params.id,
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -91,10 +129,6 @@ app.get("/u/:shortURL", (req, res) => {
   console.log(longURL, urlDatabase[req.params.shortURL])
 })
 
-// testing hello page
-app.get("/hello", (req, res) => {
-  res.end("<html><body>Hellooooo <b>World</b></body></html>\n");
-});
 
 // have server listen on the defined port
 app.listen(PORT, () => {
