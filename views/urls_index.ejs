@@ -5,8 +5,8 @@
   <% include partials/_header %>
 </head>
 <body>
-  <% if (username) { %>
-  <div style="margin: 20px;padding: 20px"><h1> What's up,  <%= username %>?</h1></div>
+  <% if (user) { %>
+  <div style="margin: 20px;padding: 20px"><h1> What's up,  <span><%= user["email"] %>?</span></h1></div>
   <% } %>
   <ul>
     <% for (let key in urls) { %>

@@ -1,19 +1,16 @@
 <!DOCTYPE html>
 <html lang=en>
 <header>
-
-    <% if (username) { %>
-     Welcome <%= username %> !
-      <form method="POST" action="/logout">
-      <button type="submit">Log Out</button></form>
-
-    <% } else { %>
-      <form action="/login" method="POST">
-      <label for="username">Log In</label>
-      <input id="username" type="text" name="username" style="width: 150px">
-      <input type="submit" value="Submit">
-      </form>
-
-    <% } %>
+  <% if (user) { %>
+    Welcome <%= user["email"] %> !
+    <form method="POST" action="/logout">
+    <button type="submit">Log Out</button></form>
+  <% } else { %>
+    <form action="/login" method="POST">
+    <label for="username">Log In</label>
+    <input id="username" type="text" name="username" style="width: 150px">
+    <input type="submit" value="Submit">
+    </form>
+  <% } %>
 </header>
 </html>
