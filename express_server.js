@@ -91,16 +91,25 @@ app.post("/urls/:shortURL", (req, res) => {
 // when user submits login button, we create a cookie
 // with key 'username' and value of their submission
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username);
-  console.log(req.body.username);
-  res.redirect(301, "/urls");
-})
+  let userEmail = req.body.email;
+  let userPass = req.body.password;
+  for (key in usersDatabase) {
+    if (userEmail === usersDatabase[key]["email"] && userPass === usersDatabase[key]["password"]) {
+      res.cookie("user_id", key);
+      res.redirect(301, "/urls");
+    }
+    if (userEmail === usersDatabase[key]["email"]) {
+      res.send(403, "<h1>Stop trying to break into other people's accounts.</h1>");
+    }
+  }
+  res.send(403, "<h1>That e-mail doesn't exist.</h1>");
+});
 
 // when logout button is clicked, user's cookie is deleted
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user-id");
   // console.log("Cookie is all gone!");
-  res.redirect(301, "/urls");
+  res.redirect(301, "/");
 });
 
 app.post("/register", (req, res) => {
@@ -149,7 +158,6 @@ app.get("/urls", (req, res) => {
 
 // get page according to short ID
 app.get("/urls/:id", (req, res) => {
-
   let templateVars = getVars(req.cookies["user_id"]);
   templateVars["shortURL"] = req.params.id;
   res.render("urls_show", templateVars);
@@ -165,6 +173,10 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("urls_register");
 });
+
+app.get("/login", (req, res) => {
+  res.render("urls_login");
+})
 
 
 

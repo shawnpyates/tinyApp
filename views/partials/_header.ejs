@@ -6,13 +6,12 @@
     <form method="POST" action="/logout">
     <button type="submit">Log Out</button></form>
   <% } else { %>
-    <form action="/login" method="POST">
+    <form action="/login" method="GET">
     <label for="username">Log In</label>
-    <input id="username" type="text" name="username" style="width: 150px">
     <input type="submit" value="Enter">
     </form>
-    <form action="/register" method="POST">
-    <label for="username">Register</label>
+    <form action="/register" method="GET">
+    <label for="register">Register</label>
     <input type="submit" value="Click here!">
     </form>
   <% } %>
