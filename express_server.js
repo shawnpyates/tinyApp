@@ -129,14 +129,13 @@ app.post("/register", (req, res) => {
   res.cookie("user_id", randomID);
   console.log("User info: " + JSON.stringify(usersDatabase[randomID]));
   console.log("All users: " + JSON.stringify(usersDatabase));
-  res.redirect(301, "/");
+  res.redirect(301, "/urls");
 });
 
 
 // get root directory
 app.get("/", (req, res) => {
-  // console.log("Cookies: ", req.cookies);
-  res.end(`Please log in to begin!`);
+  res.redirect(301, "/login");
 });
 
 // get info in json

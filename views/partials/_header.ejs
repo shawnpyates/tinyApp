@@ -2,7 +2,7 @@
 <html lang=en>
 <header>
   <% if (user) { %>
-    Welcome <%= user["email"] %> !
+    Welcome, <%= user["email"] %> !
     <form method="POST" action="/logout">
     <button type="submit">Log Out</button></form>
   <% } else { %>
