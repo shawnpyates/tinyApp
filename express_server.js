@@ -16,6 +16,28 @@ app.use("/", (req, res, next) => {
 })
 
 
+function getVars(cookieID) {
+  let thisUser = null;
+  if (usersDatabase.hasOwnProperty(cookieID)) {
+    for (key in usersDatabase) {
+      if (key === cookieID) {
+        thisUser = key;
+      }
+    }
+  }
+  let templateVars = {
+    urls: urlDatabase
+  };
+  if (thisUser) {
+    templateVars["user"] = usersDatabase[thisUser];
+  } else {
+    templateVars["user"] = null;
+  }
+  return templateVars;
+}
+
+
+
 app.set("view engine", "ejs");
 
 const urlDatabase = {
@@ -44,10 +66,7 @@ const usersDatabase = {
 app.post("/urls", (req, res) => {
   let randomString = generateRandomString();
   urlDatabase[randomString] = `http://${req.body.longURL}`;
-  let templateVars = {
-    urls: urlDatabase,
-    user: usersDatabase
-  };
+  let templateVars = getVars(req.cookies["user_id"]);
   console.log(req.body, urlDatabase);
   res.render("urls_index", templateVars);
 });
@@ -56,11 +75,7 @@ app.post("/urls", (req, res) => {
 // render the index page with the updates values
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
-  let templateVars = {
-    urls: urlDatabase,
-    // users: req.cookies["username"]
-    user: usersDatabase
-  };
+  let templateVars = getVars(req.cookies["user_id"]);
   console.log(req.body, urlDatabase);
   res.render("urls_index", templateVars);
 });
@@ -68,10 +83,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // allow the user to set a new value for a key stored in the DB
 app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL] = `http://${req.body.longURL}`;
-  let templateVars = {
-    urls: urlDatabase,
-    user: usersDatabase
-  };
+  let templateVars = getVars(req.cookies["user_id"]);
   console.log(req.body, urlDatabase);
   res.render("urls_index", templateVars);
 });
@@ -125,65 +137,21 @@ app.get("/urls.json", (req, res) => {
 
 // allow user to submit new URL to be shortened
 app.get("/urls/new", (req, res) => {
-  let thisUser = null;
-  if (usersDatabase.hasOwnProperty(req.cookies["user_id"])) {
-    for (let key in usersDatabase) {
-      if (usersDatabase[key] === req.cookies["user_id"]) {
-        thisUser = usersDatabase[key];
-      }
-    }
-  }
-  let templateVars = {
-    urls: urlDatabase
-  };
-  if (thisUser) {
-    templateVars["user"] = usersDatabase[thisUser];
-  } else {
-    templateVars["user"] = null;
-  }
+  let templateVars = getVars(req.cookies["user_id"]);
   res.render("urls_new", templateVars);
 });
 
 // show all urls
 app.get("/urls", (req, res) => {
-  let thisUser = null;
-  if (usersDatabase.hasOwnProperty(req.cookies["user_id"])) {
-    for (key in usersDatabase) {
-      if (key === req.cookies["user_id"]) {
-        thisUser = key;
-      }
-    }
-  }
-  let templateVars = {
-    urls: urlDatabase
-  };
-  if (thisUser) {
-    templateVars["user"] = usersDatabase[thisUser];
-  } else {
-    templateVars["user"] = null;
-  }
+  let templateVars = getVars(req.cookies["user_id"]);
   res.render("urls_index", templateVars);
 });
 
 // get page according to short ID
 app.get("/urls/:id", (req, res) => {
-  let thisUser = null;
-  if (usersDatabase.hasOwnProperty(req.cookies["user_id"])) {
-    for (key in usersDatabase) {
-      if (key === req.cookies["user_id"]) {
-        thisUser = key;
-      }
-    }
-  }
-  let templateVars = {
-    urls: urlDatabase,
-    shortURL: req.params.id
-  };
-  if (thisUser) {
-    templateVars["user"] = usersDatabase[thisUser];
-  } else {
-    templateVars["user"] = null;
-  }
+
+  let templateVars = getVars(req.cookies["user_id"]);
+  templateVars["shortURL"] = req.params.id;
   res.render("urls_show", templateVars);
 });
 
