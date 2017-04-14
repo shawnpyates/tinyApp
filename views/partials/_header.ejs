@@ -1,19 +1,13 @@
 <!DOCTYPE html>
 <html lang=en>
-<header>
+<header style="background:navy; color:white">
   <% if (user) { %>
     Welcome, <%= user["email"] %> !
+    <br />
+    <a href='/urls' style="text-decoration:none; color:white">See My Links</a>
     <form method="POST" action="/logout">
     <button type="submit">Log Out</button></form>
-  <% } else { %>
-    <form action="/login" method="GET">
-    <label for="username">Log In</label>
-    <input type="submit" value="Enter">
-    </form>
-    <form action="/register" method="GET">
-    <label for="register">Register</label>
-    <input type="submit" value="Click here!">
-    </form>
   <% } %>
+
 </header>
 </html>

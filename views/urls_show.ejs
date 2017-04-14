@@ -8,13 +8,15 @@
   <h3>
       <% for (let key in urls) { %>
         <% if (key === shortURL) { %>
-          Full URL: <%= urls[key]["long"] %> <br />
-          Short URL: <%= shortURL %>
+          Short URL: <%= shortURL %> <br />
+          Current Long URL: <%= urls[key]['long'] %>
           <form action="/urls/<%= key %>" method="POST" style="margin:150px;">
           <label for="longURL">Enter a new full URL for the code <%= key %>:</label>
-          <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
-          <input type="submit" value="Submit">
+          <input id="longURL" type="text" name="longURL" placeholder="<%=urls[key]['long'].slice(7)%>" style="width: 300px">
+          <input type="submit" value="Change!">
           </form>
+          <form method="POST" action="/urls/<%= key %>/delete">
+          <button type="submit">Delete this Short URL</button></form>
         <% } %>
       <% } %>
   </h3>
