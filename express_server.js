@@ -25,13 +25,19 @@ function getVars(cookieID) {
       }
     }
   }
-  let templateVars = {
-    urls: urlDatabase
-  };
+  let templateVars = {};
   if (thisUser) {
+    let userURLS = {};
+    for (key in urlDatabase) {
+      if (urlDatabase[key]["userID"] === usersDatabase[thisUser]["id"]) {
+        userURLS[key] = {long: urlDatabase[key]["long"], userID: thisUser};
+      }
+    }
     templateVars["user"] = usersDatabase[thisUser];
+    templateVars["urls"] = userURLS;
   } else {
     templateVars["user"] = null;
+    templateVars["urls"] = null;
   }
   return templateVars;
 }
@@ -41,9 +47,11 @@ function getVars(cookieID) {
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {long: "http://www.lighthouselabs.ca", userID: "userRandomID"},
+  "9sm5xK": {long: "http://www.google.com", userID: "user2RandomID"}
 };
+
+
 
 const usersDatabase = {
   "userRandomID": {
@@ -65,7 +73,7 @@ const usersDatabase = {
 // redirect user a page displaying their info (equivalent to "/urls/:id")
 app.post("/urls", (req, res) => {
   let randomString = generateRandomString();
-  urlDatabase[randomString] = `http://${req.body.longURL}`;
+  urlDatabase[randomString] = {long: `http://${req.body.longURL}`, userID: req.cookies["user_id"]};
   let templateVars = getVars(req.cookies["user_id"]);
   console.log(req.body, urlDatabase);
   res.render("urls_index", templateVars);
@@ -74,18 +82,26 @@ app.post("/urls", (req, res) => {
 // when user clicks delete button, the key and value are deleted from the database
 // render the index page with the updates values
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  let templateVars = getVars(req.cookies["user_id"]);
-  console.log(req.body, urlDatabase);
-  res.render("urls_index", templateVars);
+  if (urlDatabase[req.params.shortURL]["userID"] !== req.cookies["user_id"]) {
+    res.send(403, "<h1>GET OUT</h1>");
+  } else {
+    delete urlDatabase[req.params.shortURL];
+    let templateVars = getVars(req.cookies["user_id"]);
+    console.log(req.body, urlDatabase);
+    res.render("urls_index", templateVars);
+  }
 });
 
 // allow the user to set a new value for a key stored in the DB
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL] = `http://${req.body.longURL}`;
-  let templateVars = getVars(req.cookies["user_id"]);
-  console.log(req.body, urlDatabase);
-  res.render("urls_index", templateVars);
+  if (urlDatabase[req.params.shortURL]["userID"] !== req.cookies["user_id"]) {
+    res.send(403, "<h1>GET OUT</h1>");
+  } else {
+    urlDatabase[req.params.shortURL] = {long: `http://${req.body.longURL}`, userID: req.cookies["user_id"]};
+    let templateVars = getVars(req.cookies["user_id"]);
+    console.log(req.body, urlDatabase);
+    res.render("urls_index", templateVars);
+  }
 });
 
 // when user submits login button, we create a cookie
@@ -143,30 +159,43 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+
+
+// show all urls
+app.get("/urls", (req, res) => {
+  let templateVars = getVars(req.cookies["user_id"]);
+  if (! templateVars["user"]) {
+    res.redirect(301, "/login")
+  }
+  let userURLS = {};
+  // for (key in urlDatabase) {
+  //   if urlDatabase[key]["userID"] === req.cookies["user"]
+
+  // }
+  res.render("urls_index", templateVars);
+});
+
 // allow user to submit new URL to be shortened
 app.get("/urls/new", (req, res) => {
   let templateVars = getVars(req.cookies["user_id"]);
   res.render("urls_new", templateVars);
 });
 
-// show all urls
-app.get("/urls", (req, res) => {
-  let templateVars = getVars(req.cookies["user_id"]);
-  res.render("urls_index", templateVars);
-});
-
 // get page according to short ID
 app.get("/urls/:id", (req, res) => {
   let templateVars = getVars(req.cookies["user_id"]);
+  if (! templateVars["user"]) {
+    res.redirect(301, "/login")
+  }
   templateVars["shortURL"] = req.params.id;
   res.render("urls_show", templateVars);
 });
 
 // allow user to redirect to long URL when imputing short URL
 app.get("/u/:shortURL", (req, res) => {
-  let longURL = urlDatabase[req.params.shortURL];
+  console.log("URL DATABASE: ", urlDatabase);
+  let longURL = urlDatabase[req.params.shortURL]["long"];
   res.redirect(longURL);
-  // console.log(longURL, urlDatabase[req.params.shortURL])
 })
 
 app.get("/register", (req, res) => {
@@ -185,4 +214,11 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-
+function stringToObject(user){
+  for (let key in urlDatabase) {
+    let objToInsert = {};
+    objToInsert["long"] = urlDatabase[key];
+    objToInsert["userID"] = user;
+    urlDatabase[key] = objToInsert;
+  }
+}
