@@ -4,6 +4,7 @@ const PORT = process.env.PORT || 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const generateRandomString = require("./helperCode");
+const bcrypt = require("bcrypt");
 
 
 app.use(bodyParser.urlencoded({extended: true}));
@@ -110,7 +111,7 @@ app.post("/login", (req, res) => {
   let userEmail = req.body.email;
   let userPass = req.body.password;
   for (key in usersDatabase) {
-    if (userEmail === usersDatabase[key]["email"] && userPass === usersDatabase[key]["password"]) {
+    if (userEmail === usersDatabase[key]["email"] && bcrypt.compareSync(userPass, usersDatabase[key]["password"])) {
       res.cookie("user_id", key);
       res.redirect(301, "/urls");
     }
@@ -141,7 +142,8 @@ app.post("/register", (req, res) => {
   }
   usersDatabase[randomID] = {id: randomID};
   usersDatabase[randomID]["email"] = req.body.email;
-  usersDatabase[randomID]["password"] = req.body.password;
+  let hashedPass = bcrypt.hashSync(req.body.password, 10);
+  usersDatabase[randomID]["password"] = hashedPass;
   res.cookie("user_id", randomID);
   console.log("User info: " + JSON.stringify(usersDatabase[randomID]));
   console.log("All users: " + JSON.stringify(usersDatabase));
