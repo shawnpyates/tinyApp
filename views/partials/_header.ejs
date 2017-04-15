@@ -7,7 +7,9 @@
     <a href='/urls' style="text-decoration:none; color:white">See My Links</a>
     <form method="POST" action="/logout">
     <button type="submit">Log Out</button></form>
+  <% } else { %>
+    <a href="/login">Log In</a><br />
+    <a href="/register">Register</a>
   <% } %>
-
 </header>
 </html>

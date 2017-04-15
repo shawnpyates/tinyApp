@@ -2,30 +2,50 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 8080;
 const bodyParser = require("body-parser");
-// const cookieParser = require("cookie-parser");
 const generateRandomString = require("./helperCode");
 const bcrypt = require("bcrypt");
 const cookieSession = require("cookie-session");
 
 
 app.use(bodyParser.urlencoded({extended: true}));
+
 app.use(cookieSession({
   name: 'session',
   keys: ['tyrannosaurus', 'triceratops', 'pterodactyl', 'velociraptor']
-}))
+}));
 
 //middleware tracking all GET requests beginning with root
 app.use("/", (req, res, next) => {
   console.log("Request made to " + req.url);
   next();
-})
+});
 
+const urlDatabase = {
+  "b2xVn2": {long: "http://www.lighthouselabs.ca", userID: "userRandomID"},
+  "9sm5xK": {long: "http://www.google.com", userID: "user2RandomID"}
+};
 
-function getVars(cookieID) {
+const usersDatabase = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
+
+app.set("view engine", "ejs");
+
+// provide variables to pass on to templates
+function getVars(sessionID) {
   let thisUser = null;
-  if (usersDatabase.hasOwnProperty(cookieID)) {
+  if (usersDatabase.hasOwnProperty(sessionID)) {
     for (key in usersDatabase) {
-      if (key === cookieID) {
+      if (key === sessionID) {
         thisUser = key;
       }
     }
@@ -40,7 +60,6 @@ function getVars(cookieID) {
     }
     templateVars["user"] = usersDatabase[thisUser];
     templateVars["urls"] = userURLS;
-    console.log("TEMPLATE VARS FROM INSIDE FUNCTION: ", templateVars);
   } else {
     templateVars["user"] = null;
     templateVars["urls"] = null;
@@ -50,39 +69,14 @@ function getVars(cookieID) {
 
 
 
-app.set("view engine", "ejs");
-
-const urlDatabase = {
-  "b2xVn2": {long: "http://www.lighthouselabs.ca", userID: "userRandomID"},
-  "9sm5xK": {long: "http://www.google.com", userID: "user2RandomID"}
-};
-
-
-
-const usersDatabase = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
-}
-
-
 // get root directory
 app.get("/", (req, res) => {
-  console.log("HI");
   let templateVars = getVars(req.session.user_id);
-  console.log("TEMPLATE VARS FROM OUTSIDE FUNCTION: ", templateVars);
   if (! templateVars["user"]) {
     res.redirect("/login");
     return;
   } else {
-  res.redirect("/urls");
+    res.redirect("/urls");
   }
 });
 
@@ -105,12 +99,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   } else {
     delete urlDatabase[req.params.shortURL];
     let templateVars = getVars(req.session.user_id);
-    console.log(req.body, urlDatabase);
     res.render("urls_index", templateVars);
   }
 });
 
-// allow the user to set a new value for a key stored in the DB
+// allow the user to set a new long URL for a short URL in their own DB
 app.post("/urls/:shortURL", (req, res) => {
   if (!req.session.user_id) {
     res.send(401, "You need to be logged in to view this page. Please log in <a href='/login'>here</a>.");
@@ -126,17 +119,14 @@ app.post("/urls/:shortURL", (req, res) => {
   }
   urlDatabase[req.params.shortURL] = {long: `http://${req.body.longURL}`, userID: req.session.user_id};
   let templateVars = getVars(req.session.user_id);
-  console.log(req.body, urlDatabase);
   res.redirect(`/urls/${req.params.shortURL}`);
 });
 
-// when user submits login button, we create a cookie
-// with key 'username' and value of their submission
+// when user submits login button, we generate a session ID and redirect them
 app.post("/login", (req, res) => {
   let userEmail = req.body.email;
   let userPass = req.body.password;
   for (key in usersDatabase) {
-    console.log("USERS DATABASE: ", usersDatabase);
     if (userEmail === usersDatabase[key]["email"] && bcrypt.compareSync(userPass, usersDatabase[key]["password"])) {
       req.session.user_id = key;
       res.redirect("/");
@@ -150,12 +140,13 @@ app.post("/login", (req, res) => {
   res.send(401, "That e-mail address doesn't exist.");
 });
 
-// when logout button is clicked, user's cookie is deleted
+// when logout button is clicked, user's session is deleted
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/");
 });
 
+// when use registers, we generate session, encrypt their password, and redirect them
 app.post("/register", (req, res) => {
   let randomID = generateRandomString();
   if (!(req.body.email && req.body.password)) {
@@ -163,7 +154,6 @@ app.post("/register", (req, res) => {
     return;
   }
   for (let key in usersDatabase) {
-    console.log(usersDatabase[key].email);
     if (usersDatabase[key]["email"] === req.body.email) {
       res.send(400, "That e-mail has already been registered. Go <a href='/register'>back</a>.");
       return;
@@ -178,17 +168,13 @@ app.post("/register", (req, res) => {
 });
 
 
-
-
-
-// get info in json
+// get URL info in json
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
 
-
-// show all urls
+// show all urls in user's DB
 app.get("/urls", (req, res) => {
   let templateVars = getVars(req.session.user_id);
   if (! templateVars["user"]) {
@@ -196,14 +182,12 @@ app.get("/urls", (req, res) => {
     return;
   }
   let userURLS = {};
-  console.log("TEMPLATE VARS INSIDE /urls", templateVars);
   res.render("urls_index", templateVars);
 });
 
 // allow user to submit new URL to be shortened
 app.get("/urls/new", (req, res) => {
   let templateVars = getVars(req.session.user_id);
-  console.log("TEMPLATE VARS INSIDE /URLS/NEW: ", templateVars);
   if (! templateVars["user"]) {
     res.send(401, "You need to be logged in to view this page. Please log in <a href='/login'>here</a>.");
     return;
@@ -211,7 +195,7 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-// get page according to short ID
+// get page for single short URL
 app.get("/urls/:id", (req, res) => {
   let templateVars = getVars(req.session.user_id);
   if (! templateVars["user"]) {
@@ -230,17 +214,18 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-// allow user to redirect to long URL when imputing short URL
+// allow user to redirect to long URL when inputing short URL
 app.get("/u/:shortURL", (req, res) => {
   if (!(urlDatabase.hasOwnProperty(req.params.shortURL))) {
-    res.send(404, "This Short URL does not exist. See a list of your available pages <a href='/urls'>here.</a>")
+    res.send(404, "This Short URL does not exist. See a list of your available pages <a href='/urls'>here.</a>");
   }
   let longURL = urlDatabase[req.params.shortURL]["long"];
   res.redirect(longURL);
-})
+});
 
+// render register page if user is not logged in, else redirect them
 app.get("/register", (req, res) => {
-  let templateVars = getVars(req.session.user_id)
+  let templateVars = getVars(req.session.user_id);
   if (templateVars["user"]) {
     res.redirect("/");
     return;
@@ -248,15 +233,15 @@ app.get("/register", (req, res) => {
   res.render("urls_register");
 });
 
+// render log in page if user is not logged in, else redirect them
 app.get("/login", (req, res) => {
-  let templateVars = getVars(req.session.user_id)
+  let templateVars = getVars(req.session.user_id);
   if (templateVars["user"]) {
     res.redirect("/");
     return;
   }
   res.render("urls_login");
 });
-
 
 
 // have server listen on the defined port
